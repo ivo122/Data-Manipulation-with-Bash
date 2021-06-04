@@ -5,7 +5,7 @@ Script #1 ("Extract and Format URLs Data"):
 This script expects as an argument the name of a text file.
 Returns the extracted data from the URLs in the following format:
 
-<Date> : <Category (Kategorie)> : <Ranking (Platz)> : <Name (Name, Vorname)> : <Nationality (DOK)> : <Call Sign (Call)> : <Finish Time (Laufzeit)> : <Number of Collected Transmitters (Fox) > : <Starting Number (StNr)>
+ <Date> : <Category (Kategorie)> : <Ranking (Platz)> : <Name (Name, Vorname)> : <Nationality (DOK)> : <Call Sign (Call)> : <Finish Time (Laufzeit)> : <Number of Collected Transmitters (Fox) > : <Starting Number (StNr)>
 
 A sample row:
 
