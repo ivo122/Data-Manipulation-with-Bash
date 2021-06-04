@@ -1,0 +1,48 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+        echo "Invalid number of arguments!"
+        exit 1
+fi
+
+if [ ! -f $1 ]; then
+        echo "The argument is not a file's name!"
+        exit 2
+fi
+
+URL_LIST_NO_COMMENTS="$(cat $1 | sed 's/^#.*$//g' | awk NF)"
+
+DATE=0
+
+for URL in $(echo "${URL_LIST_NO_COMMENTS}"); do
+
+        DATE="$(curl -s -N "${URL}" | egrep -o '[[:digit:]]?[[:digit:]]\.[[:digit:]]{2}\.[[:digit:]]{4}')"
+
+        if [[ $(echo "${DATE}") =~ ^[[:digit:]].*$ ]];then
+                DATE="0${DATE}"
+        fi
+
+        CATEGORIES_REPETITIONS="$(curl -s -N "${URL}" | egrep -A 2 "Band/Limit:" | tail -n 1 | awk -F ';' '{ print $2 }' |
+                sed 's/<td>/ /g' | awk -F '=' '{ print $1 }' |
+                cut -c 2- | sed 's/ /\n/g' | head -n -1)"
+
+        CATEGORIES_NAMES=$'W19\nW21\nW35\nW50\nW60\nM19\nM21\nM40\nM50\nM60\nM70'
+
+        CATEGORIES_ALL_INFO=$(paste <(echo "${CATEGORIES_REPETITIONS}") <(echo "${CATEGORIES_NAMES}") -d '|')
+
+        SUM_REPETITIONS=0
+
+        for CURR_CATEGORY in $(echo "${CATEGORIES_ALL_INFO}");do
+
+                CURR_CATEGORY_REPETITIONS=$(echo "${CURR_CATEGORY}" | awk -F '|' '{ print $1 }')
+                CURR_CATEGORY_NAME=$(echo "${CURR_CATEGORY}" | awk -F '|' '{ print $2 }')
+
+                SUM_REPETITIONS=$(echo "${SUM_REPETITIONS}+${CURR_CATEGORY_REPETITIONS}" | bc)
+
+                curl -s -N "${URL}" |
+                grep "^<tr[[:space:]]class=\"ResLine[[:space:]]C[abcd]\">" | head -n "${SUM_REPETITIONS}" | tail -n "${CURR_CATEGORY_REPETITIONS}" |
+                sed 's/<.[^>]*>/ /g' | tr -s ' ' | sed 's/, / /g' |
+                awk -v CURR_DATE="${DATE}" -v CATEGORY="${CURR_CATEGORY_NAME}" '{ print CURR_DATE" "CATEGORY" "$1" "$3" "$2" "$4" "$5" "$6" "$7" "$8 }' |
+                sed 's/ /:/g' | sed 's/:/ /4' | sed 's/\.//3'
+        done
+done
