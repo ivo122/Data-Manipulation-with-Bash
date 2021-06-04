@@ -1,0 +1,77 @@
+#!/bin/bash
+
+if [ ! -f "${1}" ];then
+        echo "The first argument should be a file!"
+        exit 1
+fi
+
+FILE=$(echo "${1}")
+
+if [ ! "${2}" = top_places ] && [ ! "${2}" = parts ];then
+        echo "The second argument should be either 'top_places', or 'parts'!"
+        exit 2
+fi
+
+if [ "${2}" = "top_places" ];then
+        if [ "${#}" -ne 5 ];then
+                echo "Wrong number of arguments!"
+                exit 3
+        fi
+
+        if [[ ! "${5}" =~ ^[[:digit:]]+$ ]];then
+                echo "The fifth argument should be a number!"
+                exit 4
+        fi
+
+        if [[ ! "${4}" =~ ^[[:digit:]]+$ ]];then
+                echo "The fourth argument should be a number!"
+                exit 5
+        fi
+
+        if [[ ! "${3}" =~ ^[WM][[:digit:]]{2}$ ]];then
+                echo "Wrong format for the third argument!"
+                exit 6
+        fi
+fi
+
+if [ "${2}" = "parts" ];then
+        if [ "${#}" -ne 3 ];then
+                echo "Wrong number of arguments!"
+                exit 7
+        fi
+
+        if [[ ! "${3}" =~ ^[[:upper:]][[:lower:]]*[[:space:]][[:upper:]][[:lower:]]*$ ]];then
+                echo "The third argument should be a name!"
+                exit 8
+        fi
+fi
+
+if [ "${2}" = "top_places" ];then
+
+        CATEGORY=$(echo "${3}")
+        TOP_N_PARTICIPANTS=$(echo "${5}")
+        TOP_M_RANKS=$(echo "${4}")
+
+        cat "${FILE}" | egrep "^.*:${CATEGORY}:[[:digit:]]+:" |
+        awk -F ':' -v RANKS="${TOP_M_RANKS}" '$3<=RANKS { print $4 }' |
+        sort -k 1 | uniq -c | sort -k 1 -nr | head -n "${TOP_N_PARTICIPANTS}"
+
+fi
+
+if [ "${2}" = "parts" ];then
+
+        NAME=$(echo "${3}")
+
+        ALL_CATEGORIES_AND_DATES=$(cat "${FILE}" | egrep "^.*:.*:.*:${NAME}:" | awk -F ':' '{ print $2" "$1 }')
+        UNIQUE_CATEGORIES=$(echo "${ALL_CATEGORIES_AND_DATES}" | awk '{ print $1 }' | sort | uniq)
+
+        for CURR_CATEGORY in $(echo "${UNIQUE_CATEGORIES}");do
+                CURR_CATEGORY_DATES_COLUMN=$(echo "${ALL_CATEGORIES_AND_DATES}" | awk -v CATEGORY="${CURR_CATEGORY}" '$1~CATEGORY { print $2 }' |
+                        sort -t '.' -k3 -k2 -k1)
+                CURR_CATEGORY_DATES_COUNT=$(echo "${CURR_CATEGORY_DATES_COLUMN}" | wc -l)
+                CURR_CATEGORY_DATES_ROW=$(echo "${CURR_CATEGORY_DATES_COLUMN}" | tr '\n' ',' | sed "s/,//${CURR_CATEGORY_DATES_COUNT}")
+
+                echo -e "${CURR_CATEGORY} ${CURR_CATEGORY_DATES_ROW}" | sort -k1
+        done
+
+fi
